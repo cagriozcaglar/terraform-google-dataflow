@@ -1,0 +1,187 @@
+apiVersion: blueprints.cloud.google.com/v1alpha1
+kind: TerraformBlueprint
+metadata:
+  name: terraform-google-dataflow-job
+  source:
+    repo: https://github.com/GoogleCloudPlatform/terraform-google-dataflow-job # Plausible repository name
+    type: git
+    dir: /
+  version: 1.0.0
+  actuationTool:
+    type: Terraform
+    versions:
+    - ">= 1.3"
+  title: Google Cloud Dataflow Job
+  icon: # No icon provided in source
+  diagrams: []
+  documentations: []
+  descriptions:
+    tagline: A Terraform module to create and manage Google Cloud Dataflow jobs.
+    detailed: This module is used to create and manage a Google Cloud Dataflow job. It supports both Classic templates (via `google_dataflow_job`) and Flex templates (via `google_dataflow_flex_template_job`).
+  labels:
+    service: dataflow
+    gcp: true
+    terraform: true
+  examples:
+  - name: flex_template_example
+    location: examples/flex_template # Plausible example path
+  - name: classic_template_example
+    location: examples/classic_template # Plausible example path
+
+spec:
+  # Info from variables.tf
+  variables:
+  - name: project_id
+    description: The ID of the GCP project where the Dataflow job will be created. If not provided, no job will be created.
+    type: string
+    required: false
+    default: null
+  - name: name
+    description: A unique name for the Dataflow job. If not provided, no job will be created.
+    type: string
+    required: false
+    default: null
+  - name: template_gcs_path
+    description: The Google Cloud Storage path to the Dataflow template. For Flex templates, this is the path to the template JSON file. For Classic templates, this is the path to the template file. If not provided, no job will be created.
+    type: string
+    required: false
+    default: null
+  - name: temp_gcs_location
+    description: The Google Cloud Storage path for Dataflow to stage temporary files. Required when using a Classic template (i.e., when `var.flex_template` is `false`).
+    type: string
+    required: false
+    default: null
+  - name: region
+    description: The GCP region where the Dataflow job will run.
+    type: string
+    required: false
+    default: "us-central1"
+  - name: flex_template
+    description: Set to true to use a Flex Template (`google_dataflow_flex_template_job`), or false to use a Classic Template (`google_dataflow_job`).
+    type: bool
+    required: false
+    default: true
+  - name: parameters
+    description: A map of key-value parameters to pass to the Dataflow job.
+    type: map(string)
+    required: false
+    default: {}
+  - name: labels
+    description: A map of key-value labels to apply to the Dataflow job.
+    type: map(string)
+    required: false
+    default: {}
+  - name: on_delete
+    description: Defines the behavior when the Dataflow job is deleted. For streaming jobs, 'drain' is recommended. For batch jobs, 'cancel' is a safe default. Valid values are 'drain', 'cancel', or 'disable' (for classic jobs only).
+    type: string
+    required: false
+    default: "cancel"
+  - name: service_account_email
+    description: The email address of the service account to run the Dataflow job's workers as.
+    type: string
+    required: false
+    default: null
+  - name: subnetwork
+    description: The fully-qualified URL of the VPC subnetwork to run the Dataflow job's workers in. The subnetwork must be in the same region as the job.
+    type: string
+    required: false
+    default: null
+  - name: ip_configuration
+    description: The IP configuration for the Dataflow workers. Valid values are 'WORKER_IP_PUBLIC' and 'WORKER_IP_PRIVATE'.
+    type: string
+    required: false
+    default: null
+  - name: machine_type
+    description: The machine type to use for the Dataflow workers. For example, 'n1-standard-1'.
+    type: string
+    required: false
+    default: null
+  - name: max_workers
+    description: The maximum number of workers to use for the Dataflow job. This enables autoscaling.
+    type: number
+    required: false
+    default: null
+  - name: enable_streaming_engine
+    description: Set to true to enable the Dataflow Streaming Engine for streaming jobs.
+    type: bool
+    required: false
+    default: false
+  - name: additional_experiments
+    description: A list of additional experiments to enable for the Dataflow job.
+    type: list(string)
+    required: false
+    default: []
+  - name: skip_wait_on_job_termination
+    description: If set to true, Terraform will not wait for the job to terminate upon 'terraform destroy'. This is only applicable for Flex Template jobs.
+    type: bool
+    required: false
+    default: false
+
+  variableGroups:
+  - name: Required Job Configuration
+    description: Core settings required to define the Dataflow job and its location.
+    variables:
+    - project_id
+    - name
+    - template_gcs_path
+    - region
+  - name: Template Type Configuration
+    description: Variables to control the type of Dataflow template used.
+    variables:
+    - flex_template
+    - temp_gcs_location
+  - name: Job Parameters
+    description: User-defined parameters and labels for the job.
+    variables:
+    - parameters
+    - labels
+  - name: Worker Configuration
+    description: Settings for the Dataflow worker pool, including networking and machine types.
+    variables:
+    - service_account_email
+    - subnetwork
+    - ip_configuration
+    - machine_type
+    - max_workers
+  - name: Advanced Configuration
+    description: Advanced job lifecycle and performance settings.
+    variables:
+    - on_delete
+    - enable_streaming_engine
+    - additional_experiments
+    - skip_wait_on_job_termination
+
+  # Info from outputs.tf
+  outputs:
+  - name: job_id
+    description: The unique ID of the created Dataflow job.
+  - name: job_name
+    description: The name of the created Dataflow job.
+  - name: job_state
+    description: The current state of the Dataflow job.
+
+  # Inferred from HCL
+  requirements:
+    services:
+    - dataflow.googleapis.com
+    - compute.googleapis.com
+    - storage.googleapis.com
+    - cloudresourcemanager.googleapis.com
+    roles:
+    - level: Project
+      role: roles/dataflow.developer
+      description: "Required to create and manage Dataflow jobs."
+    - level: Project
+      role: roles/iam.serviceAccountUser
+      description: "Required for the deployer to impersonate the worker service account."
+    - level: Project
+      role: roles/storage.objectAdmin
+      description: "Required for the worker service account to read templates from and write temporary files to GCS."
+    - level: Project
+      role: roles/compute.networkUser
+      description: "Required if deploying the Dataflow job into a shared VPC subnetwork."
+    permissions:
+    - dataflow.jobs.create
+    - iam.serviceAccounts.actAs
+    - storage.objects.get
+    - storage.objects.create
