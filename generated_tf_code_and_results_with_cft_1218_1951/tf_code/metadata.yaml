@@ -1,0 +1,173 @@
+apiVersion: blueprints.cloud.google.com/v1alpha1
+kind: BlueprintMetadata
+
+spec:
+  info:
+    title: Dataflow Job From Template
+    source:
+      repo: https://github.com/GoogleCloudPlatform/terraform-google-dataflow-job.git
+      source_type: git
+      dir: /
+    version: 1.0.0
+    actuation:
+      type: Terraform
+      version:
+        - ">= 1.3.0"
+    description:
+      tagline: Deploy a Google Cloud Dataflow job from a classic or Flex template.
+      detailed: This module creates a Google Cloud Dataflow job from either a classic or a Flex Template. It is designed to be a flexible and reusable component for launching both batch and streaming pipelines.
+    documentation:
+      - title: README
+        url: https://github.com/GoogleCloudPlatform/terraform-google-dataflow-job/blob/main/README.md
+
+  content:
+    requirements:
+      roles:
+        - level: project
+          roles:
+            - roles/dataflow.admin
+            - roles/iam.serviceAccountUser
+            - roles/storage.objectAdmin # To manage GCS resources for templates and temp files
+      services:
+        - dataflow.googleapis.com
+        - compute.googleapis.com
+        - storage.googleapis.com
+        - cloudresourcemanager.googleapis.com
+        - cloudkms.googleapis.com
+
+    inputs:
+      - name: project_id
+        description: The ID of the Google Cloud project in which to launch the Dataflow job. If not provided, the provider project is used.
+        varType: String
+        required: false
+        defaultValue: null
+      - name: name
+        description: A unique name for the Dataflow job, which must start with a letter and contain only letters, numbers, and hyphens. A random suffix will be appended. If not provided, no job will be created.
+        varType: String
+        required: false
+        defaultValue: null
+      - name: region
+        description: The region in which the Dataflow job will be launched.
+        varType: String
+        required: false
+        defaultValue: "us-central1"
+      - name: template_gcs_path
+        description: The GCS path to the Dataflow job template. For classic templates, this is the path to the template file. For Flex Templates, this is the path to the template spec file. If not provided, no job will be created.
+        varType: String
+        required: false
+        defaultValue: null
+      - name: temp_gcs_location
+        description: A GCS path for Dataflow to stage temporary job files during the execution of the pipeline. If not provided, no job will be created.
+        varType: String
+        required: false
+        defaultValue: null
+      - name: parameters
+        description: Key/value pairs to pass to the Dataflow job as pipeline parameters. For Flex Templates, this map must contain 'containerSpecGcsPath'.
+        varType: Object
+        required: false
+        defaultValue: {}
+      - name: service_account_email
+        description: The email of the service account to run the Dataflow job and workers. If unspecified, the default Compute Engine service account is used.
+        varType: String
+        required: false
+        defaultValue: null
+      - name: on_delete
+        description: Action to take when the job resource is destroyed. Should be 'cancel' for streaming jobs and 'drain' for batch jobs.
+        varType: String
+        required: false
+        defaultValue: "drain"
+      - name: zone
+        description: The zone in which the Dataflow job will be launched. If left blank, the service will pick a zone in the region.
+        varType: String
+        required: false
+        defaultValue: null
+      - name: machine_type
+        description: The machine type to use for the Dataflow workers.
+        varType: String
+        required: false
+        defaultValue: null
+      - name: max_workers
+        description: The maximum number of workers to use for the job. This is a recommendation, not a strict limit.
+        varType: Number
+        required: false
+        defaultValue: null
+      - name: network
+        description: The VPC network to which the Dataflow workers will be assigned. If left blank, the default network is used.
+        varType: String
+        required: false
+        defaultValue: null
+      - name: subnetwork
+        description: The VPC subnetwork to which the Dataflow workers will be assigned.
+        varType: String
+        required: false
+        defaultValue: null
+      - name: ip_configuration
+        description: The IP configuration for the Dataflow workers. Valid values are 'WORKER_IP_PUBLIC' and 'WORKER_IP_PRIVATE'.
+        varType: String
+        required: false
+        defaultValue: null
+      - name: enable_streaming_engine
+        description: Whether to enable Streaming Engine for the job.
+        varType: Bool
+        required: false
+        defaultValue: false
+      - name: additional_experiments
+        description: List of experiments to enable for this job.
+        varType: List of String
+        required: false
+        defaultValue: []
+      - name: labels
+        description: A map of key/value label pairs to assign to the Dataflow job.
+        varType: Object
+        required: false
+        defaultValue: {}
+      - name: kms_key_name
+        description: The Cloud KMS key to use for this job. The key must be provided in the format 'projects/PROJECT/locations/LOCATION/keyRings/RING/cryptoKeys/KEY'.
+        varType: String
+        required: false
+        defaultValue: null
+
+    variableGroups:
+      - name: "Core Job Settings"
+        description: "Basic configuration for the Dataflow job, including name, location, and template information."
+        variables:
+          - project_id
+          - name
+          - region
+          - template_gcs_path
+          - temp_gcs_location
+      - name: "Pipeline & Job Parameters"
+        description: "Parameters for the pipeline and job lifecycle."
+        variables:
+          - parameters
+          - on_delete
+          - labels
+          - additional_experiments
+      - name: "Worker Configuration"
+        description: "Settings related to the Compute Engine workers that run the Dataflow job."
+        variables:
+          - service_account_email
+          - zone
+          - machine_type
+          - max_workers
+          - enable_streaming_engine
+      - name: "Networking"
+        description: "VPC networking configuration for the Dataflow workers."
+        variables:
+          - network
+          - subnetwork
+          - ip_configuration
+      - name: "Security"
+        description: "Security-related settings for the Dataflow job."
+        variables:
+          - kms_key_name
+
+    outputs:
+      - name: job_id
+        description: The unique ID of the created Dataflow job.
+      - name: job_name
+        description: The full name of the Dataflow job.
+      - name: job_state
+        description: The current state of the Dataflow job.
+      - name: job_type
+        description: The type of the Dataflow job.
