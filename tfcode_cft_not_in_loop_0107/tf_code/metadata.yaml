@@ -1,0 +1,197 @@
+# This metadata.yaml file is generated based on the provided Terraform module code
+# and adheres to the TF Blueprint Metadata standard.
+# It provides metadata for discovery, cataloging, customization, and consumption of the blueprint.
+apiVersion: blueprints.cloud.google.com/v1alpha1
+kind: TerraformBlueprint
+metadata:
+  name: terraform-google-dataflow-job
+  source:
+    type: git
+    git:
+      repo: https://github.com/GoogleCloudPlatform/terraform-google-dataflow-job
+      dir: /
+  version: 1.0.0
+  actuationTool:
+    type: Terraform
+    versions:
+      - ">= 1.0"
+  title: Dataflow Job
+  description:
+    tagline: A Terraform module to create and manage Google Cloud Dataflow jobs.
+    detailed: This module is used to create and manage Google Cloud Dataflow jobs. It supports both classic templates and Flex Templates by using the `google_dataflow_job` resource. The module encapsulates common configurations such as worker settings, networking, service accounts, and job parameters, providing a reusable interface for launching various Dataflow pipelines.
+  icon: https://cloud.google.com/images/products/dataflow/logo_dataflow_192.svg
+  documentation:
+    - title: "Dataflow Documentation"
+      url: "https://cloud.google.com/dataflow/docs"
+spec:
+  requirements:
+    services:
+      - dataflow.googleapis.com
+      - compute.googleapis.com
+      - storage.googleapis.com
+      - cloudkms.googleapis.com
+      - cloudresourcemanager.googleapis.com
+    roles:
+      - level: Project
+        roles:
+          - role: roles/dataflow.developer
+            description: "Required for the user/service account deploying this blueprint to create and manage Dataflow jobs."
+          - role: roles/iam.serviceAccountUser
+            description: "Required for the deploying user/service account to impersonate the worker service account."
+      - level: Service Account
+        roles:
+          - role: roles/dataflow.worker
+            description: "Required for the Dataflow worker service account to execute pipeline tasks."
+          - role: roles/storage.objectAdmin
+            description: "Required for the Dataflow worker service account to access GCS buckets for staging, temporary files, and templates."
+  interfaces:
+    variables:
+      - name: name
+        description: A unique name for the Dataflow job. Must be unique within the project and region.
+        type: string
+        required: true
+        default: "dataflow-job-from-tf"
+      - name: region
+        description: The region where the Dataflow job will be created. If not provided, the provider's region is used.
+        type: string
+        required: true
+        default: "us-central1"
+      - name: temp_gcs_location
+        description: A GCS path for the Dataflow service to stage temporary files. Must be a gs:// URL.
+        type: string
+        required: true
+        default: "gs://INVALID_BUCKET/temp"
+      - name: use_flex_template
+        description: Set to true to launch a Dataflow Flex Template job. If false, a classic template job is launched.
+        type: bool
+        required: false
+        default: false
+      - name: template_gcs_path
+        description: The GCS path for the classic Dataflow template. Required if `use_flex_template` is false.
+        type: string
+        required: false
+        default: "gs://INVALID_BUCKET/templates/template_name"
+      - name: container_spec_gcs_path
+        description: The GCS path for the Dataflow Flex Template container spec. Required if `use_flex_template` is true.
+        type: string
+        required: false
+        default: null
+      - name: parameters
+        description: Key/value pairs to be passed to the Dataflow job as runtime parameters.
+        type: map(string)
+        required: false
+        default: {}
+      - name: project_id
+        description: The project ID where the Dataflow job will be created. If not provided, the provider's project is used.
+        type: string
+        required: false
+        default: null
+      - name: zone
+        description: The zone where the Dataflow job will be created. It's recommended to leave this blank and let the service choose the zone.
+        type: string
+        required: false
+        default: null
+      - name: labels
+        description: A map of labels to assign to the Dataflow job.
+        type: map(string)
+        required: false
+        default: {}
+      - name: machine_type
+        description: The machine type to use for Dataflow workers. If not specified, the default is used.
+        type: string
+        required: false
+        default: null
+      - name: max_workers
+        description: The maximum number of workers to use for the job. Used for autoscaling. Cannot be used with `num_workers`.
+        type: number
+        required: false
+        default: null
+      - name: num_workers
+        description: The fixed number of workers to use for the job. This is passed as the `numWorkers` parameter to the job, and cannot be used with `max_workers`.
+        type: number
+        required: false
+        default: null
+      - name: service_account_email
+        description: The service account to run the Dataflow job. If not specified, the default Compute Engine service account is used.
+        type: string
+        required: false
+        default: null
+      - name: network
+        description: The self-link of the VPC network to which the job's workers should be assigned.
+        type: string
+        required: false
+        default: null
+      - name: subnetwork
+        description: The self-link of the subnetwork to which the job's workers should be assigned.
+        type: string
+        required: false
+        default: null
+      - name: ip_configuration
+        description: The configuration for worker IP address assignment. Can be `WORKER_IP_PUBLIC` or `WORKER_IP_PRIVATE`.
+        type: string
+        required: false
+        default: null
+      - name: kms_key_name
+        description: The KMS key used to encrypt the job resources.
+        type: string
+        required: false
+        default: null
+      - name: additional_experiments
+        description: List of experiments to enable.
+        type: list(string)
+        required: false
+        default: []
+      - name: enable_streaming_engine
+        description: Enable Streaming Engine for streaming jobs. This is for classic templates. For Flex Templates, pass 'enableStreamingEngine=true' in parameters.
+        type: bool
+        required: false
+        default: false
+      - name: on_delete
+        description: Action to take when the Terraform resource is destroyed. Can be 'drain', 'cancel' or 'terminate'.
+        type: string
+        required: false
+        default: "cancel"
+    variableGroups:
+      - name: "Core Job Settings"
+        description: "Basic configuration for the Dataflow job."
+        variables:
+          - name
+          - project_id
+          - region
+          - zone
+          - labels
+      - name: "Template Configuration"
+        description: "Settings related to the Dataflow template to be executed."
+        variables:
+          - use_flex_template
+          - template_gcs_path
+          - container_spec_gcs_path
+          - temp_gcs_location
+          - parameters
+      - name: "Worker Configuration"
+        description: "Configuration for the Compute Engine instances that run the job."
+        variables:
+          - machine_type
+          - num_workers
+          - max_workers
+          - enable_streaming_engine
+          - additional_experiments
+      - name: "Networking and Security"
+        description: "VPC networking and security settings for the job."
+        variables:
+          - network
+          - subnetwork
+          - ip_configuration
+          - service_account_email
+          - kms_key_name
+      - name: "Lifecycle Management"
+        description: "Defines the behavior when the job resource is deleted."
+        variables:
+          - on_delete
+    outputs:
+      - name: job_id
+        description: The unique ID of the created Dataflow job.
+      - name: job_name
+        description: The name of the created Dataflow job.
+      - name: job_state
+        description: The current state of the Dataflow job.
