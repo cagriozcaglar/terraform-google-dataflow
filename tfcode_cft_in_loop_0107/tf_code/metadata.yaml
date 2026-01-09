@@ -1,0 +1,211 @@
+# KRM-style header
+apiVersion: blueprints.cloud.google.com/v1alpha1
+kind: BlueprintMetadata
+
+# Basic blueprint metadata
+metadata:
+  # The machine-readable name of the blueprint
+  name: terraform-google-dataflow-job
+  # Source repository details
+  source:
+    type: git
+    git:
+      repo: https://github.com/GoogleCloudPlatform/terraform-google-dataflow-job
+      dir: /
+  # The release version of the blueprint
+  version: 1.0.0
+  # Actuation tool details
+  actuationTool:
+    type: Terraform
+    version: ">= 1.3"
+
+# Detailed blueprint specifications
+spec:
+  # General information about the blueprint
+  info:
+    # Human-readable title
+    title: Google Cloud Dataflow Job
+    # Short and detailed descriptions
+    description:
+      tagline: A Terraform module to create and manage a Google Cloud Dataflow job from a Classic or Flex template.
+      detailed: This module simplifies the deployment of Google Cloud Dataflow jobs. It supports launching jobs from both Classic and Flex templates, and provides a comprehensive set of configurable options for networking, machine types, and job behavior.
+    # Icon for the blueprint (placeholder)
+    icon: ""
+    # Links to official documentation (placeholder)
+    documentation:
+      - title: "Module Documentation"
+        url: "https://github.com/GoogleCloudPlatform/terraform-google-dataflow-job/blob/main/README.md"
+    # List of examples for using the blueprint (placeholder)
+    examples:
+      - name: "simple_classic_job"
+        location: "examples/simple_classic_job"
+        title: "Simple Classic Dataflow Job"
+      - name: "simple_flex_job"
+        location: "examples/simple_flex_job"
+        title: "Simple Flex Template Dataflow Job"
+  # Blueprint content details
+  content:
+    # Required GCP APIs and IAM roles
+    requirements:
+      # GCP services (APIs) that must be enabled
+      services:
+        - dataflow.googleapis.com
+        - compute.googleapis.com
+        - storage.googleapis.com
+      # Required IAM roles for the identity deploying the blueprint
+      roles:
+        - level: project
+          role: roles/dataflow.developer
+        - level: project
+          role: roles/iam.serviceAccountUser
+  # Interface for customization (variables and outputs)
+  interfaces:
+    # Input variables for the blueprint
+    variables:
+      - name: name
+        description: The name for the Dataflow job. A unique name will be generated if not provided.
+        type: string
+        default: null
+        required: false
+      - name: project_id
+        description: The GCP project ID where the job will run. If not provided, the provider project is used.
+        type: string
+        default: null
+        required: false
+      - name: region
+        description: The region where the job will run. If not provided, the provider region is used.
+        type: string
+        default: null
+        required: false
+      - name: zone
+        description: The zone where the job will run. Applicable only for CLASSIC jobs.
+        type: string
+        default: null
+        required: false
+      - name: job_type
+        description: The type of Dataflow job template. Must be either 'CLASSIC' or 'FLEX'.
+        type: string
+        default: "CLASSIC"
+        required: true
+      - name: template_gcs_path
+        description: The GCS path to the CLASSIC template file. Required if job_type is 'CLASSIC'.
+        type: string
+        default: null
+        required: false
+      - name: flex_template_gcs_path
+        description: The GCS path to the Flex Template JSON file. Required if job_type is 'FLEX'.
+        type: string
+        default: null
+        required: false
+      - name: temp_gcs_location
+        description: The GCS path for staging temporary files. Required for CLASSIC jobs.
+        type: string
+        default: null
+        required: false
+      - name: parameters
+        description: Key-value pairs to be passed to the job as parameters.
+        type: object
+        default: {}
+        required: true
+      - name: labels
+        description: User-defined labels to apply to the job.
+        type: object
+        default: {}
+        required: true
+      - name: service_account_email
+        description: The service account email to run the job as.
+        type: string
+        default: null
+        required: false
+      - name: machine_type
+        description: The machine type to use for the worker VMs.
+        type: string
+        default: null
+        required: false
+      - name: max_workers
+        description: The maximum number of workers permitted to run.
+        type: number
+        default: null
+        required: false
+      - name: network
+        description: The VPC network to which the workers will be deployed.
+        type: string
+        default: null
+        required: false
+      - name: subnetwork
+        description: The VPC subnetwork to which the workers will be deployed.
+        type: string
+        default: null
+        required: false
+      - name: ip_configuration
+        description: The configuration for VM IPs. Can be 'WORKER_IP_PUBLIC' or 'WORKER_IP_PRIVATE'.
+        type: string
+        default: null
+        required: false
+      - name: additional_experiments
+        description: List of experiments to enable for the job. Applicable only for CLASSIC jobs.
+        type: array
+        default: []
+        required: true
+      - name: enable_streaming_engine
+        description: Indicates if the job should use the streaming engine feature.
+        type: boolean
+        default: false
+        required: true
+      - name: on_delete
+        description: Defines the behavior on resource destruction. Can be 'drain' or 'cancel'. Default is 'cancel'.
+        type: string
+        default: "cancel"
+        required: true
+      - name: skip_wait_on_job_termination
+        description: If true, Terraform will not wait for job termination on destroy/update.
+        type: boolean
+        default: false
+        required: true
+    # Logical groupings of variables for better UI presentation
+    variableGroups:
+      - name: "Job Configuration"
+        description: "Core settings for the Dataflow job."
+        variables:
+          - name
+          - project_id
+          - region
+          - zone
+          - labels
+      - name: "Template Configuration"
+        description: "Settings related to the Dataflow template."
+        variables:
+          - job_type
+          - template_gcs_path
+          - flex_template_gcs_path
+          - temp_gcs_location
+          - parameters
+      - name: "Worker Configuration"
+        description: "Settings for the Dataflow worker VMs."
+        variables:
+          - service_account_email
+          - machine_type
+          - max_workers
+          - enable_streaming_engine
+      - name: "Networking"
+        description: "VPC networking configuration for workers."
+        variables:
+          - network
+          - subnetwork
+          - ip_configuration
+      - name: "Advanced Options"
+        description: "Advanced job control and behavior settings."
+        variables:
+          - additional_experiments
+          - on_delete
+          - skip_wait_on_job_termination
+    # Outputs of the blueprint
+    outputs:
+      - name: job_id
+        description: The unique ID of the created Dataflow job.
+      - name: job_name
+        description: The unique name of the created Dataflow job.
+      - name: job_state
+        description: The current state of the created Dataflow job.
+      - name: job_type
+        description: The type of the created Dataflow job.
