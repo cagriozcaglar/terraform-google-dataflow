@@ -1,0 +1,39 @@
+{
+  "resourceRoles": [
+    {
+      "resourceName": "projects/gcp-project",
+      "roles": [
+        {
+          "name": "roles/dataflow.developer",
+          "permissions": [
+            "dataflow.jobs.create",
+            "dataflow.jobs.cancel",
+            "dataflow.jobs.get"
+          ]
+        },
+        {
+          "name": "roles/iam.serviceAccountUser",
+          "permissions": [
+            "iam.serviceAccounts.actAs"
+          ]
+        },
+        {
+          "name": "roles/iam.operationViewer",
+          "permissions": [
+            "iam.operations.get"
+          ]
+        }
+      ]
+    }
+  ],
+  "[cloud_iam.policy_ai.iampolicyai.IacRolesAdditionalInfo.additional_info]": {
+    "resourceInfos": [
+      {
+        "resourceName": "projects/gcp-project",
+        "createResourceTypes": [
+          "google_dataflow_job"
+        ]
+      }
+    ]
+  }
+}

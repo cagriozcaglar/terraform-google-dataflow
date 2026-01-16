@@ -170,3 +170,11 @@ spec:
       description: The current state of the Dataflow job.
     - name: type
       description: The type of the Dataflow job (e.g., JOB_TYPE_STREAMING, JOB_TYPE_BATCH).
+requirements:
+  roles:
+    - level: project
+      role: roles/dataflow.developer
+    - level: project
+      role: roles/iam.serviceAccountUser
+    - level: project
+      role: roles/iam.operationViewer
