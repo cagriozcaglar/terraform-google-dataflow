@@ -1,0 +1,172 @@
+# Copyright 2024 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: blueprints.cloud.google.com/v1alpha1
+kind: TerraformBlueprint
+metadata:
+  name: terraform-google-dataflow-flex-template
+  source:
+    type: git
+    git:
+      repo: https://github.com/GoogleCloudPlatform/terraform-google-dataflow-flex-template.git
+      # A pseudo-directory where the blueprint is defined.
+      dir: /
+  version: 1.0.0
+  actuationTool:
+    type: Terraform
+    versions:
+      - ">= 1.3"
+    flavor: HashiCorp
+  info:
+    title: Dataflow Flex Template Job
+    description:
+      tagline: This module is used to create a Google Cloud Dataflow job from a Flex Template.
+      detailed: Flex Templates allow you to package and run your own Dataflow pipelines. This module simplifies the deployment of such jobs.
+    icon: https://cloud.google.com/static/images/cloud/products/icons/v1/dataflow.svg
+    documentations:
+      - title: "Module Documentation"
+        url: "https://github.com/GoogleCloudPlatform/terraform-google-dataflow-flex-template/blob/main/README.md"
+    examples:
+      - name: simple_example
+        title: "Simple Example"
+        url: "https://github.com/GoogleCloudPlatform/terraform-google-dataflow-flex-template/tree/main/examples/simple_example"
+spec:
+  # Requirements for using the blueprint
+  requirements:
+    # GCP APIs that must be enabled to use the blueprint
+    services:
+      - dataflow.googleapis.com
+      - storage.googleapis.com
+      - compute.googleapis.com
+    # IAM roles required to deploy the blueprint
+    roles:
+      - role: roles/dataflow.developer
+        level: project
+      - role: roles/iam.serviceAccountUser
+        level: project
+        description: "Required for the deployer to impersonate the provided service_account_email."
+      - role: roles/storage.objectAdmin
+        level: project
+        description: "Required for the job's service account to access GCS buckets for templates and temporary files."
+      - role: roles/dataflow.worker
+        level: project
+        description: "Required for the job's service account to execute pipeline tasks."
+  # Input variables for the blueprint
+  variables:
+    - name: name
+      description: A unique name for the Dataflow Flex Template job.
+      type: string
+      required: true
+      default: "dataflow-flex-template-job-example"
+    - name: template_gcs_path
+      description: The GCS path to the Dataflow job template spec file. This variable must be set to a valid GCS location.
+      type: string
+      required: true
+      default: "gs://your-gcs-bucket-name/templates/template-spec.json"
+    - name: temp_gcs_location
+      description: A GCS path for temporary files and staging. This variable must be set to a valid GCS location.
+      type: string
+      required: true
+      default: "gs://your-gcs-bucket-name/temp"
+    - name: project_id
+      description: The GCP project ID where the Dataflow job will be created. If it is not provided, the provider project is used.
+      type: string
+      default: null
+    - name: region
+      description: The region in which the Dataflow job will run. If it is not provided, the provider region is used.
+      type: string
+      default: null
+    - name: parameters
+      description: The parameters for the Flex Template. (e.g. { "inputSubscription":"projects/p/subscriptions/s", "outputTable":"p:d.t" })
+      type: map(string)
+      default: {}
+    - name: service_account_email
+      description: The service account to run the job as.
+      type: string
+      default: null
+    - name: network
+      description: The VPC network to host the job in.
+      type: string
+      default: null
+    - name: subnetwork
+      description: The subnetwork to host the job in. Must be in the same region as the job.
+      type: string
+      default: null
+    - name: machine_type
+      description: The machine type to use for workers. If not set, the service will pick a default.
+      type: string
+      default: null
+    - name: max_workers
+      description: The maximum number of workers to use. If not set, the service will pick a default.
+      type: number
+      default: null
+    - name: ip_configuration
+      description: "The configuration for VM IPs. Can be 'WORKER_IP_PUBLIC' or 'WORKER_IP_PRIVATE'."
+      type: string
+      default: null
+    - name: enable_streaming_engine
+      description: Enable/disable the Dataflow Streaming Engine for streaming jobs.
+      type: bool
+      default: false
+    - name: additional_experiments
+      description: List of experiments to enable on the Dataflow job.
+      type: list(string)
+      default: []
+    - name: labels
+      description: User-defined labels for the job.
+      type: map(string)
+      default: {}
+    - name: on_delete
+      description: "Defines the behavior of the job when the resource is destroyed. One of 'drain' or 'cancel'."
+      type: string
+      default: "cancel"
+  variableGroups:
+    - name: "Required Settings"
+      description: "Core configuration for the Dataflow job."
+      variables:
+        - name
+        - template_gcs_path
+        - temp_gcs_location
+    - name: "General Configuration"
+      description: "General project and job settings."
+      variables:
+        - project_id
+        - region
+        - parameters
+        - service_account_email
+        - on_delete
+        - labels
+    - name: "Worker and Performance"
+      description: "Settings related to worker VMs and job performance."
+      variables:
+        - machine_type
+        - max_workers
+        - enable_streaming_engine
+        - additional_experiments
+    - name: "Networking"
+      description: "VPC and IP configuration for the job."
+      variables:
+        - network
+        - subnetwork
+        - ip_configuration
+  # Outputs from the blueprint
+  outputs:
+    - name: job_id
+      description: The unique ID of the Dataflow job.
+    - name: name
+      description: The name of the Dataflow job.
+    - name: state
+      description: The current state of the Dataflow job.
+    - name: type
+      description: The type of the Dataflow job (e.g., JOB_TYPE_STREAMING, JOB_TYPE_BATCH).
